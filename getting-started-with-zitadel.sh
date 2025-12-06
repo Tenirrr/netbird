@@ -89,7 +89,8 @@ get_main_ip_address() {
     ip_address=$(ip addr show "$interface" | grep 'inet ' | awk '{print $2}' | cut -d'/' -f1)
   fi
 
-  echo "$ip_address"
+  $PUBLIC_IP
+  #echo "$ip_address"
 }
 
 wait_pat() {
@@ -511,6 +512,8 @@ initEnvironment() {
   # Caddy inside docker will listen on port 80 (mapped to host 10080)
   # But application logic expects https URLs
   
+  get_main_ip_address()
+
   TURN_USER="self"
   TURN_PASSWORD=$(openssl rand -base64 32 | sed 's/=//g')
   NETBIRD_RELAY_AUTH_SECRET=$(openssl rand -base64 32 | sed 's/=//g')
@@ -946,6 +949,8 @@ services:
   dashboard:
     image: netbirdio/dashboard:latest
     restart: unless-stopped
+    extra_hosts:
+      - "$NETBIRD_DOMAIN:$PUBLIC_IP"
     networks: [netbird]
     env_file:
       - ./dashboard.env
@@ -980,6 +985,8 @@ services:
   management:
     image: netbirdio/management:latest
     restart: unless-stopped
+    extra_hosts:
+      - "$NETBIRD_DOMAIN:$PUBLIC_IP"
     networks: [netbird]
     volumes:
       - netbird_management:/var/lib/netbird
